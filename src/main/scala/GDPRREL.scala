@@ -3,9 +3,9 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.functions._
+import spray.json._
 import scopt.OptionParser
-
-
+import DefaultJsonProtocol._
 import java.io.File
 
 
@@ -38,11 +38,19 @@ object GDPRREL {
       df.coalesce(1).write.mode("overwrite").parquet(outputPath)
     }
   }
-
   def deleteuser(id: Int, Data: DataFrame): DataFrame = {
     Data.filter(col("id").notEqual(id))
 
-
+  }
+  def hashIdColumn(df: DataFrame, id: Int, columnNameToHash: String): DataFrame ={
+    df.withColumn(columnNameToHash,
+      when(col("id") ===id, lit(md5(  col(columnNameToHash  ))))
+        .otherwise(col(columnNameToHash))
+    )
+  }
+  def extractuser(id: Int, df: DataFrame): Unit={
+    val dfid = df.filter(col("id").equalTo(id))
+    dfid.write.option("header",true).csv("/Users/tarikbelattar/Documents/Spark/Data/GDPR_RESULT/Extract_user_"+id+".csv")
   }
 
 
@@ -68,35 +76,22 @@ object GDPRREL {
     println("################HASHER LES DONNÉES D'UN USER#####################")
     val person = readData(path,"CSV", schema)
     val DFperson = person.right.get
-//    def hashuser(id: Int, Data: DataFrame): DataFrame = {
-//      person.withColumn("id",
-//        base64(bin(hash("first_name","last_name","email", "gender", "ip_address","Job Title", "Company Name","University"   ))))
-//      )
-//
-//    }
+
+
+
     //val hashDf = hashuser(10, person)
 
-    val haseddDf = DFperson.withColumn("first_name",
-                   when(col("id") ==="10", lit(md5(  col("first_name"  ))))
-                     .otherwise(col("first_name"))
+//    val haseddDf = DFperson.withColumn("first_name",
+//                   when(col("id") ==="10", lit(md5(  col("first_name"  ))))
+//                     .otherwise(col("first_name"))
+    val hasheduserLN = hashIdColumn(DFperson,11,"last_name")
+    val hasheduserLNFN = hashIdColumn(hasheduserLN,11,"first_name")
+    val hasheduserLnFnEm = hashIdColumn(hasheduserLNFN,11,"email")
+    hasheduserLnFnEm.show()
 
-    )
-
-
-
-    haseddDf.show()
-    val builder = OParser.builder[Config]
-    val parser1 = {
-      import builder._
-      OParser.sequence(
-        programName("scopt"),
-        head("scopt", "4.x"),
-        // option -f, --foo
-        opt[Int]('f', "foo")
-          .action((x, c) => c.copy(foo = x))
-          .text("foo is an integer property"),
-        // more options here...
-      )
+    println("################GDPR#####################")
+    println("################GÉNERER LES DONNÉES D'UN USER ET LES ENVOYER PAR EMAIL#####################")
+    val dfgeneratedData = extractuser(15, DFperson)
     }
   }
-}
+
