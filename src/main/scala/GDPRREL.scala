@@ -77,20 +77,13 @@ object GDPRREL {
     val person = readData(path,"CSV", schema)
     val DFperson = person.right.get
 
-
-
-    //val hashDf = hashuser(10, person)
-
-//    val haseddDf = DFperson.withColumn("first_name",
-//                   when(col("id") ==="10", lit(md5(  col("first_name"  ))))
-//                     .otherwise(col("first_name"))
     val hasheduserLN = hashIdColumn(DFperson,11,"last_name")
     val hasheduserLNFN = hashIdColumn(hasheduserLN,11,"first_name")
     val hasheduserLnFnEm = hashIdColumn(hasheduserLNFN,11,"email")
     hasheduserLnFnEm.show()
 
     println("################GDPR#####################")
-    println("################GÉNERER LES DONNÉES D'UN USER ET LES ENVOYER PAR EMAIL#####################")
+    println("################GÉNERER LES DONNÉES D'UN USER DANS UN FICHIER CSV#####################")
     val dfgeneratedData = extractuser(15, DFperson)
     }
   }
